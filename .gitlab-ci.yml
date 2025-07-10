@@ -1,0 +1,39 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+
+before_script:
+  - corepack enable
+  - corepack prepare pnpm@latest --activate
+
+build:
+  stage: build
+  image: node:${NODE_VERSION}
+  script:
+    - pnpm install --frozen-lockfile
+    - pnpm run check
+    - pnpm run cf-typegen
+  artifacts:
+    paths:
+      - node_modules/
+      - worker-configuration.d.ts
+    expire_in: 1 hour
+  only:
+    - main
+    - merge_requests
+
+deploy:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  dependencies:
+    - build
+  script:
+    - pnpm run deploy
+  environment:
+    name: production
+    url: https://hello.interns.workers.dev
+  only:
+    - main
