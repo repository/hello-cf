@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "qr",
+	"name": "hello",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-07-09",
 	"observability": {
@@ -16,7 +16,7 @@
 			"custom_domain": true
 		}
 	],
-	"workers_dev": false,
+	"workers_dev": true,
 	"preview_urls": false
 	/**
 	 * Smart Placement
