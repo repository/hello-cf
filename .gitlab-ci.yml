@@ -1,39 +1,40 @@
 stages:
-  - build
-  - deploy
+  - lint
+  - typecheck
+  - deploy-prod
 
-variables:
-  NODE_VERSION: "20"
+include:
+  - component: $CI_SERVER_FQDN/cloudflare/ci/pnpm/run@~latest
+    inputs:
+      runOnMR: true
+      runOnBranches: ^main$
+      stage: lint
+      jobPrefix: lint
+      PNPM_RUN_TARGET: 'check'
+  - component: $CI_SERVER_FQDN/cloudflare/ci/pnpm/run@~latest
+    inputs:
+      runOnMR: true
+      runOnBranches: ^main$
+      stage: typecheck
+      jobPrefix: typecheck
+      PNPM_RUN_TARGET: 'cf-typegen'
+  - component: $CI_SERVER_FQDN/cloudflare/ci/pnpm/run@~latest
+    inputs:
+      runOnBranches: main
+      stage: deploy-prod
+      jobPrefix: deploy-prod
+      PNPM_RUN_TARGET: 'deploy'
 
-before_script:
-  - corepack enable
-  - corepack prepare pnpm@latest --activate
+lint-run:
+  timeout: 10 minutes
+  stage: lint
 
-build:
-  stage: build
-  image: node:${NODE_VERSION}
-  script:
-    - pnpm install --frozen-lockfile
-    - pnpm run check
-    - pnpm run cf-typegen
-  artifacts:
-    paths:
-      - node_modules/
-      - worker-configuration.d.ts
-    expire_in: 1 hour
-  only:
-    - main
-    - merge_requests
+typecheck-run:
+  timeout: 10 minutes
+  stage: typecheck
 
-deploy:
-  stage: deploy
-  image: node:${NODE_VERSION}
-  dependencies:
-    - build
-  script:
-    - pnpm run deploy
-  environment:
-    name: production
-    url: https://hello.interns.workers.dev
-  only:
-    - main
+deploy-prod-run:
+  timeout: 15 minutes
+  stage: deploy-prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
